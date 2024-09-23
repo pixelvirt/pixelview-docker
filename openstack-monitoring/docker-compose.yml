@@ -2,7 +2,7 @@ version: '3'
 services:
   openstack-monitoring:
     restart: always
-    image: ghcr.io/pixelvirt/kubernetes-go:latest
+    image: ghcr.io/pixelvirt/openstack-go:latest
     env_file:
       - .env
     ports:
