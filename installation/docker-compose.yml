@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  escalation:
+    image: ghcr.io/pixelvirt/escalation:latest
+    restart: always
+    depends_on:
+      - rabbitmq
+    extra_hosts:
+      - "mongoservice:172.17.0.1"
+      - "rabbitmqservice:172.17.0.1"
+    environment:
+      MONGOURL: "mongoservice:27018"
+      RABBITURL: "amqp://alertagility:vcW41MPUlM54uw@rabbitmqservice:5673/alertagility"
+
+  finEscalation:
+    image: ghcr.io/pixelvirt/findescalation:latest
+    restart: always
+    depends_on:
+      - rabbitmq
+    extra_hosts:
+      - "mongoservice:172.17.0.1"
+      - "rabbitmqservice:172.17.0.1"
+    environment:
+      MONGOURL: "mongoservice:27018"
+      RABBITURL: "amqp://alertagility:vcW41MPUlM54uw@rabbitmqservice:5673/alertagility"
+
+  alertagility:
+    image: ghcr.io/pixelvirt/alertagility:latest
+    restart: always
+    ports:
+      - "9090:9090"
+    depends_on:
+      - rabbitmq
+    extra_hosts:
+      - "mongoservice:172.17.0.1"
+      - "rabbitmqservice:172.17.0.1"
+    environment:
+      MONGOURL: "mongoservice:27018"
+      DOMAIN: "demo.pixelvirt.com"
+      RABBITURL: "amqp://alertagility:wq:vcW41MPUlM54uw@rabbitmqservice:5673/alertagility"
+
+  rabbitmq:
+    image: ghcr.io/pixelvirt/inithive-rabbitmq:latest
+    restart: always
+    ports:
+      - "5673:5672"
+    environment:
+      - RABBITMQ_PASSWORD=vcW41MPUlM54uw
+      - RABBITMQ_USER=alertagility
+
+  mongodb:
+    image: mongo:5
+    ports:
+      - "27018:27017"
+    volumes:
+      - ./data:/data/db
+
+  alert-frontend:
+    image: ghcr.io/pixelvirt/alertagility-frontend:v2
+    restart: always
+    depends_on:
+      - alertagility
+    ports:
+      - "80:80"
+    environment:
+      - BACKEND_URL=alertagility:9090
