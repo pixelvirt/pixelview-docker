@@ -1,0 +1,10 @@
+version: '3'
+services:
+  k8s-monitoring:
+    restart: always
+    image: ghcr.io/pixelvirt/kubernetes-go:latest
+    env_file:
+      - .env
+    ports:
+      - "9091:9091"    
+    container_name: k8s-monitoring

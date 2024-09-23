@@ -1,0 +1,11 @@
+version: '3'
+services:
+  openstack-monitoring:
+    restart: always
+    image: ghcr.io/pixelvirt/kubernetes-go:latest
+    env_file:
+      - .env
+    ports:
+      - "9092:9092"    
+    container_name: openstack-monitoring
+
