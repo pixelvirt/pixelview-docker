@@ -1,0 +1,10 @@
+version: '3'
+services:
+  prometheus_openstack:
+    restart: always
+    image: ghcr.io/pixelvirt/prom-go:latest
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"    
+    container_name: prometheus_openstack
