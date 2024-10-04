@@ -8,3 +8,5 @@ services:
     ports:
       - "9091:9091"    
     container_name: k8s-monitoring
+    volumes:
+      - /usr/src/app/:/usr/src/app/
