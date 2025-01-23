@@ -1,11 +1,21 @@
 version: '3'
 services:
-  openstack-monitoring:
+  openstack-integration:
     restart: always
-    image: ghcr.io/pixelvirt/openstack-go:latest
+    image: ghcr.io/pixelvirt/openstack-go:openstack-test
     env_file:
       - .env
     ports:
-      - "9092:9092"    
-    container_name: openstack-monitoring
-
+      - "5000:8005"
+    container_name: openstack-integrations
+    volumes:
+      - /etc/openstack/clouds.yaml:/etc/openstack/clouds.yaml
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    volumes:
+      - ./data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: openstack
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
