@@ -1,28 +1,22 @@
-version: "3.9"
-
 services:
   escalation:
     image: ghcr.io/pixelvirt/escalation:latest
     restart: always
     depends_on:
-      - rabbitmq
-    extra_hosts:
-      - "mongoservice:172.17.0.1"
-      - "rabbitmqservice:172.17.0.1"
+      - rabbitmqservice
+      - mongoservice
     environment:
-      MONGOURL: "mongoservice:27018"
+      MONGOURL: mongoservice
       RABBITURL: "amqp://alertagility:vcW41MPUlM54uw@rabbitmqservice:5673/alertagility"
 
   finEscalation:
     image: ghcr.io/pixelvirt/findescalation:latest
     restart: always
     depends_on:
-      - rabbitmq
-    extra_hosts:
-      - "mongoservice:172.17.0.1"
-      - "rabbitmqservice:172.17.0.1"
+      - mongoservice
+      - rabbitmqservice
     environment:
-      MONGOURL: "mongoservice:27018"
+      MONGOURL: mongoservice
       RABBITURL: "amqp://alertagility:vcW41MPUlM54uw@rabbitmqservice:5673/alertagility"
 
   alertagility:
@@ -31,16 +25,19 @@ services:
     ports:
       - "9090:9090"
     depends_on:
-      - rabbitmq
-    extra_hosts:
-      - "mongoservice:172.17.0.1"
-      - "rabbitmqservice:172.17.0.1"
+      - mongoservice
+      - rabbitmqservice
     environment:
-      MONGOURL: "mongoservice:27018"
-      DOMAIN: "demo.pixelvirt.com"
-      RABBITURL: "amqp://alertagility:wq:vcW41MPUlM54uw@rabbitmqservice:5673/alertagility"
+      DEX_ISSUER_URL: "https://dex.pixelvirt.com/dex"
+      DEX_REDIRECT_URI: "https://pixelvirt.com/api/auth/callback"
+      OPENSTACK_MIDDLEWARE_URL: "http://openstack:8005"
+      MONGOURL: mongoservice
+      DOMAIN: "flex.ohthree.com"
+      SUBDOMAIN: "alertagility"
+      RABBITURL: "amqp://alertagility:vcW41MPUlM54uw@rabbitmqservice:5673/alertagility"
 
-  rabbitmq:
+
+  rabbitmqservice:
     image: ghcr.io/pixelvirt/inithive-rabbitmq:latest
     restart: always
     ports:
@@ -49,15 +46,13 @@ services:
       - RABBITMQ_PASSWORD=vcW41MPUlM54uw
       - RABBITMQ_USER=alertagility
 
-  mongodb:
+  mongoservice:
     image: mongo:5
-    ports:
-      - "27018:27017"
     volumes:
-      - ./data:/data/db
+      - ./pixelview-data:/data/db
 
   alert-frontend:
-    image: ghcr.io/pixelvirt/alertagility-frontend:demo
+    image: ghcr.io/pixelvirt/alertagility-frontend:latest
     restart: always
     depends_on:
       - alertagility
@@ -65,3 +60,41 @@ services:
       - "80:80"
     environment:
       - BACKEND_URL=alertagility:9090
+      - OPENSTACK_BACKEND_URL=openstack:8005
+      - KUBERNETES_BACKEND_URL=kubernetes:4000
+      - CHAT_BACKEND_URL=chatbot:8765
+
+  openstack:
+    image: ghcr.io/pixelvirt/openstack-go:latest
+    restart: always
+    ports:
+      - "8005:8005"
+    environment:
+      - MONGO_URI=mongodb://mongoservice
+      - MONGO_DBNAME=dashboard_db
+      - GOPHER_CLOUD_DEBUG=true
+      - PIXELVIEW_URL=http://alertagility:9090
+#    Include common cloud config. This will be visible to all users.
+#    volumes:
+#      - ./clouds.yaml:/etc/openstack/clouds.yaml
+
+  kubernetes:
+    restart: always
+    image: ghcr.io/pixelvirt/kubernetes-go:latest
+    ports:
+      - "4000:4000"
+    container_name: k8s-dashboard
+    environment:
+      - KUBECONFIG_FILE=/usr/src/app/kubeconfig
+      - GET_CONFIG_FROM=bla
+      - PIXELVIEW_URL=http://alertagility:9090
+#    Include common kube config. This will be visible to all users.
+#    volumes:
+#      - ./k8s-config/:/usr/src/app/
+
+  chatbot:
+    restart: always
+    image: ghcr.io/pixelvirt/chatbot-dummy:latest
+    ports:
+      - "8765:8765"
+    command: python3 app/main.py
